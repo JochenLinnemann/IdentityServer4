@@ -179,7 +179,7 @@ namespace IdentityServer4.IntegrationTests.Endpoints.Authorize
             _mockPipeline.LoginRequest.IdP.Should().Be("idp_value");
             _mockPipeline.LoginRequest.Tenant.Should().Be("tenant_value");
             _mockPipeline.LoginRequest.LoginHint.Should().Be("login_hint_value");
-            _mockPipeline.LoginRequest.AcrValues.ShouldAllBeEquivalentTo(new string[] { "acr_2", "acr_1" });
+            _mockPipeline.LoginRequest.AcrValues.Should().BeEquivalentTo(new string[] { "acr_2", "acr_1" });
             _mockPipeline.LoginRequest.Parameters.AllKeys.Should().Contain("foo");
             _mockPipeline.LoginRequest.Parameters["foo"].Should().Be("bar");
         }
@@ -265,7 +265,7 @@ namespace IdentityServer4.IntegrationTests.Endpoints.Authorize
             authorization.IdentityToken.Should().NotBeNull();
             authorization.State.Should().Be("123_state");
             var scopes = authorization.Scope.Split(' ');
-            scopes.ShouldAllBeEquivalentTo(new string[] { "profile", "api1", "openid" });
+            scopes.Should().BeEquivalentTo(new string[] { "profile", "api1", "openid" });
         }
 
         [Fact]
@@ -980,7 +980,7 @@ namespace IdentityServer4.IntegrationTests.Endpoints.Authorize
                 nonce: "123_nonce");
 
             Func<Task> a = () => _mockPipeline.BrowserClient.GetAsync(url);
-            a.ShouldThrow<Exception>();
+            a.Should().Throw<Exception>();
         }
 
         [Fact]
@@ -1023,6 +1023,23 @@ namespace IdentityServer4.IntegrationTests.Endpoints.Authorize
 
             _mockPipeline.ErrorWasCalled.Should().BeTrue();
             _mockPipeline.ErrorMessage.DisplayMode.Should().Be("popup");
+        }
+
+        [Fact]
+        [Trait("Category", Category)]
+        public async Task unicode_values_in_url_should_be_processed_correctly()
+        {
+            var url = _mockPipeline.CreateAuthorizeUrl(
+                clientId: "client1",
+                responseType: "id_token",
+                scope: "openid",
+                redirectUri: "https://client1/callback",
+                state: "123_state",
+                nonce: "123_nonce");
+            url = url.Replace(IdentityServerPipeline.BaseUrl, "https://грант.рф");
+
+            var result = await _mockPipeline.Client.GetAsync(url);
+            result.Headers.Location.Authority.Should().Be("xn--80af5akm.xn--p1ai");
         }
     }
 }

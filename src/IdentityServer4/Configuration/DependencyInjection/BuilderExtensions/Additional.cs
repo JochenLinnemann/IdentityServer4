@@ -1,4 +1,4 @@
-﻿// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
+// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
@@ -90,8 +90,9 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IIdentityServerBuilder AddClientStore<T>(this IIdentityServerBuilder builder)
            where T : class, IClientStore
         {
-            builder.Services.AddTransient<IClientStore, T>();
-
+            builder.Services.TryAddTransient(typeof(T));
+            builder.Services.AddTransient<IClientStore, ValidatingClientStore<T>>();
+            
             return builder;
         }
 
@@ -174,7 +175,9 @@ namespace Microsoft.Extensions.DependencyInjection
             where T : IClientStore
         {
             builder.Services.TryAddTransient(typeof(T));
-            builder.Services.AddTransient<IClientStore, CachingClientStore<T>>();
+            builder.Services.AddTransient<ValidatingClientStore<T>>();
+            builder.Services.AddTransient<IClientStore, CachingClientStore<ValidatingClientStore<T>>>();
+
             return builder;
         }
         
@@ -243,6 +246,20 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             builder.AddSecretParser<JwtBearerClientAssertionSecretParser>();
             builder.AddSecretValidator<PrivateKeyJwtSecretValidator>();
+
+            return builder;
+        }
+
+        /// <summary>
+        /// Adds a client configuration validator.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="builder">The builder.</param>
+        /// <returns></returns>
+        public static IIdentityServerBuilder AddClientConfigurationValidator<T>(this IIdentityServerBuilder builder)
+            where T : class, IClientConfigurationValidator
+        {
+            builder.Services.AddTransient<IClientConfigurationValidator, T>();
 
             return builder;
         }

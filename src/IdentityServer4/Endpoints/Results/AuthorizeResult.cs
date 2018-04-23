@@ -1,4 +1,4 @@
-// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
+﻿// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
@@ -15,6 +15,7 @@ using IdentityServer4.Configuration;
 using IdentityServer4.Stores;
 using IdentityServer4.ResponseHandling;
 using Microsoft.AspNetCore.Authentication;
+using System.Text.Encodings.Web;
 
 namespace IdentityServer4.Endpoints.Results
 {
@@ -126,18 +127,7 @@ namespace IdentityServer4.Endpoints.Results
 
         private void AddSecurityHeaders(HttpContext context)
         {
-            var formOrigin = Response.Request.RedirectUri.GetOrigin();
-            var csp = $"default-src 'none'; script-src 'sha256-VuNUSJ59bpCpw62HM2JG/hCyGiqoPN3NqGvNXQPU+rY='; ";
-
-            if (!context.Response.Headers.ContainsKey("Content-Security-Policy"))
-            {
-                context.Response.Headers.Add("Content-Security-Policy", csp);
-            }
-
-            if (!context.Response.Headers.ContainsKey("X-Content-Security-Policy"))
-            {
-                context.Response.Headers.Add("X-Content-Security-Policy", csp);
-            }
+            context.Response.AddScriptCspHeaders(_options.Csp, "sha256-VuNUSJ59bpCpw62HM2JG/hCyGiqoPN3NqGvNXQPU+rY=");
 
             var referrer_policy = "no-referrer";
             if (!context.Response.Headers.ContainsKey("Referrer-Policy"))
@@ -169,13 +159,15 @@ namespace IdentityServer4.Endpoints.Results
             return uri;
         }
 
-        private const string FormPostHtml = "<form method='post' action='{uri}'>{body}<noscript><button>Click to continue</button></noscript></form><script>(function(){document.forms[0].submit();})();</script>";
+        private const string FormPostHtml = "<html><head><base target='_self'/></head><body><form method='post' action='{uri}'>{body}<noscript><button>Click to continue</button></noscript></form><script>(function(){document.forms[0].submit();})();</script></body></html>";
 
         private string GetFormPostHtml()
         {
             var html = FormPostHtml;
 
-            html = html.Replace("{uri}", Response.Request.RedirectUri);
+            var url = Response.Request.RedirectUri;
+            url = HtmlEncoder.Default.Encode(url);
+            html = html.Replace("{uri}", url);
             html = html.Replace("{body}", Response.ToNameValueCollection().ToFormPost());
 
             return html;

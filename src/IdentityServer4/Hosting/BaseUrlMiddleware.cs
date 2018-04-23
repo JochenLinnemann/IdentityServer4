@@ -6,8 +6,6 @@ using IdentityServer4.Extensions;
 using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
 using IdentityServer4.Configuration;
-using System.Linq;
-using System;
 
 #pragma warning disable 1591
 
@@ -28,17 +26,12 @@ namespace IdentityServer4.Hosting
         {
             var request = context.Request;
 
-            var origin = _options.PublicOrigin ?? request.Scheme + "://" + request.Host.Value;
-            context.SetIdentityServerOrigin(origin);
-            context.SetIdentityServerBasePath(request.PathBase.Value.RemoveTrailingSlash());
-
             if (_options.PublicOrigin.IsPresent())
             {
-                var split = _options.PublicOrigin.Split(new[] { "://" }, StringSplitOptions.RemoveEmptyEntries);
-
-                context.Request.Scheme = split.First();
-                context.Request.Host = new HostString(split.Skip(1).First());
+                context.SetIdentityServerOrigin(_options.PublicOrigin);
             }
+
+            context.SetIdentityServerBasePath(request.PathBase.Value.RemoveTrailingSlash());
 
             await _next(context);
         }

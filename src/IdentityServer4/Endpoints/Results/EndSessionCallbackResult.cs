@@ -59,27 +59,17 @@ namespace IdentityServer4.Endpoints.Results
 
         private void AddCspHeaders(HttpContext context)
         {
-            // the hash matches the embedded style element being used below
-            var value = "default-src 'none'; style-src 'sha256-u+OupXgfekP+x/f6rMdoEAspPCYUtca912isERnoEjY='";
-
             if (_options.Authentication.RequireCspFrameSrcForSignout)
             {
+                string frameSources = null;
                 var origins = _result.FrontChannelLogoutUrls?.Select(x => x.GetOrigin());
                 if (origins != null && origins.Any())
                 {
-                    var list = origins.Distinct().Aggregate((x, y) => $"{x} {y}");
-                    value += $";frame-src {list}";
+                    frameSources = origins.Distinct().Aggregate((x, y) => $"{x} {y}");
                 }
-            }
 
-            if (!context.Response.Headers.ContainsKey("Content-Security-Policy"))
-            {
-                context.Response.Headers.Add("Content-Security-Policy", value);
-            }
-
-            if (!context.Response.Headers.ContainsKey("X-Content-Security-Policy"))
-            {
-                context.Response.Headers.Add("X-Content-Security-Policy", value);
+                // the hash matches the embedded style element being used below
+                context.Response.AddStyleCspHeaders(_options.Csp, "sha256-u+OupXgfekP+x/f6rMdoEAspPCYUtca912isERnoEjY=", frameSources);
             }
         }
 

@@ -6,11 +6,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using IdentityServer4.Configuration;
-using IdentityServer4.Endpoints;
 using IdentityServer4.Endpoints.Results;
 using IdentityServer4.Validation;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace IdentityServer.UnitTests.Endpoints.EndSession
@@ -57,7 +55,7 @@ namespace IdentityServer.UnitTests.Endpoints.EndSession
 
             await _subject.ExecuteAsync(ctx);
 
-            ctx.Response.Headers["Content-Security-Policy"].First().Should().NotContain("frame-src");
+            ctx.Response.Headers["Content-Security-Policy"].FirstOrDefault().Should().BeNull();
         }
     }
 }

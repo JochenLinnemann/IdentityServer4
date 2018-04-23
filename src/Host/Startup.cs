@@ -1,4 +1,4 @@
-﻿// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
+// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
@@ -8,9 +8,9 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using Microsoft.IdentityModel.Tokens;
 using IdentityServer4;
-using Microsoft.AspNetCore.Http;
 using IdentityServer4.Quickstart.UI;
 using Microsoft.Extensions.Configuration;
+using IdentityServer4.Validation;
 
 namespace Host
 {
@@ -38,6 +38,7 @@ namespace Host
                     options.Events.RaiseSuccessEvents = true;
                     options.Events.RaiseFailureEvents = true;
                     options.Events.RaiseErrorEvents = true;
+                    options.Events.RaiseInformationEvents = true;
                 })
                 .AddInMemoryClients(Clients.Get())
                 //.AddInMemoryClients(_config.GetSection("Clients"))
@@ -48,6 +49,7 @@ namespace Host
                 .AddExtensionGrantValidator<Extensions.NoSubjectExtensionGrantValidator>()
                 .AddJwtBearerClientAuthentication()
                 .AddAppAuthRedirectUriValidator()
+                .AddClientConfigurationValidator<DefaultClientConfigurationValidator>()
                 .AddTestUsers(TestUsers.Users);
 
             services.AddExternalIdentityProviders();
@@ -57,6 +59,7 @@ namespace Host
 
         public void Configure(IApplicationBuilder app)
         {
+            app.UseMiddleware<Logging.RequestLoggerMiddleware>();
             app.UseDeveloperExceptionPage();
 
             app.UseIdentityServer();
@@ -129,6 +132,20 @@ namespace Host
                     options.CallbackPath = "/signin-adfs";
                     options.SignedOutCallbackPath = "/signout-callback-adfs";
                     options.RemoteSignOutPath = "/signout-adfs";
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        NameClaimType = "name",
+                        RoleClaimType = "role"
+                    };
+                })
+                .AddWsFederation("adfs-wsfed", "ADFS with WS-Fed", options =>
+                {
+                    options.SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme;
+                    options.SignOutScheme = IdentityServerConstants.SignoutScheme;
+
+                    options.MetadataAddress = "https://adfs4.local/federationmetadata/2007-06/federationmetadata.xml";
+                    options.Wtrealm = "urn:test";
+
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         NameClaimType = "name",
